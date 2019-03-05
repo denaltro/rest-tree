@@ -1,0 +1,13 @@
+mongo:
+  host: 'localhost'
+  port: 27017
+  database: 'tree'
+  collection: 'tree'
+
+api:
+  host: 'localhost'
+  port: 8080
+
+auth:
+  user: 'user'
+  password: '123456'
