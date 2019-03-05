@@ -1,8 +1,10 @@
 import json
 
 from aiohttp import web
+
 from tree.db import Repository
 from tree.model import Leaf
+from tree.exceptions import NotFoundException, BadAttribute
 
 
 class Handlers:
@@ -10,16 +12,21 @@ class Handlers:
         self.repo = Repository(mongo)
 
     async def add(self, request):
-        body = await request.json()
-        if not body['id'] or not body['name']:
-            raise web.HTTPBadRequest()
+        try:
+            body = request.body
+            leaf = Leaf(body.get('id'), body.get('name'))
+            if leaf.parent_id and not await self.repo.get_one(leaf.parent_id):
+                raise NotFoundException()
 
-        leaf = Leaf(body['id'], body['name'])
-        if leaf.parent_id and not await self.repo.get_one(leaf.parent_id):
-            raise web.HTTPForbidden()
-
-        await self.repo.add(leaf)
-        return web.Response()
+            await self.repo.add(leaf)
+            return web.Response()
+        except BadAttribute:
+            return web.HTTPBadRequest()
+        except NotFoundException:
+            return web.HTTPForbidden()
+        except Exception as e:
+            print(e)
+            return web.HTTPInternalServerError()
 
     async def get(self, request):
         q = request.query.get('q')
@@ -30,11 +37,11 @@ class Handlers:
         result = []
         if q:
             result = await self.repo.search(q)
-        elif branch:
+        elif branch and Leaf.is_valid_id(branch):
             result = await self.repo.get_branch(branch)
-        elif id:
+        elif id and Leaf.is_valid_id(id):
             result = await self.repo.get_one(id)
-        elif child:
+        elif child and Leaf.is_valid_id(child):
             result = await self.repo.get_children(child)
         else:
             raise web.HTTPBadRequest()

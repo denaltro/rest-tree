@@ -1,3 +1,5 @@
+import re
+
 from tree.model import Leaf
 from tree.settings import config
 
@@ -18,9 +20,10 @@ class Repository:
         }, upsert=True)
 
     async def get_one(self, id):
-        return await self.collection.find_one({
+        cursor = self.collection.find_one({
             '_id': id
         })
+        return await cursor
 
     async def get_branch(self, id):
         id_parents = Leaf.get_with_parents_array(id)
@@ -35,13 +38,18 @@ class Repository:
 
     async def get_children(self, id):
         cursor = self.collection.find({
-            'parent_id': id
+            '_id': {
+                '$regex': re.compile('^{}*'.format(id), re.IGNORECASE)
+            }
         })
         return await cursor.to_list(length=None)
 
     async def search(self, text):
-        cursor = self.collection.find(
-            {'$text': {
-                '$search': text
-            }})
+        cursor = self.collection.find({
+            '$text': {
+                '$search': text,
+                '$caseSensitive': False,
+                '$diacriticSensitive': True
+            }
+        })
         return await cursor.to_list(length=None)

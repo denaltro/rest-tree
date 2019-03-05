@@ -1,15 +1,22 @@
+import re
+from tree.exceptions import BadAttribute
+
+id_regex = re.compile(r'^\d+(\.\d+)*$')
+
+
 class Leaf:
     _text = None
     _parent_id = None
+    _model = None
 
     def __init__(self, id, name):
-        if not id or not isinstance(id, str):
-            raise ValueError(
-                'Could not make leaf model without required attributes')
+        if not id or not isinstance(id, str) or not self.is_valid_id(id):
+            raise BadAttribute(
+                'Could not make leaf model without required attributes (id)')
 
         if not name or not isinstance(name, str):
-            raise ValueError(
-                'Could not make leaf model without required attributes')
+            raise BadAttribute(
+                'Could not make leaf model without required attributes (name)')
 
         self.id = id
         self.name = name
@@ -35,8 +42,19 @@ class Leaf:
             return None
         return '.'.join(arr[:-1])
 
-    def json(self):
-        return self.__dict__
+    @property
+    def model(self):
+        if not self._model:
+            self._model = self._map()
+        return self._model
+
+    def _map(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'parent_id': self.parent_id,
+            'text': self.text
+        }
 
     @staticmethod
     def get_with_parents_array(id):
@@ -52,3 +70,7 @@ class Leaf:
         for i in range(0, length):
             result.append('.'.join(arr[0:i+1]))
         return result
+
+    @classmethod
+    def is_valid_id(cls, id):
+        return id_regex.match(id)

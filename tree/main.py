@@ -2,12 +2,12 @@ import asyncio
 from aiohttp import web
 from tree.utils import setup_mongo, close_mongo
 from tree.routes import setup_routes
-from tree.middlewares import check_auth
+from tree.middlewares import check_auth, set_body
 from tree.settings import config
 
 
 async def init(loop):
-    app = web.Application(loop=loop, middlewares=[check_auth])
+    app = web.Application(middlewares=[set_body, check_auth])
     app.config = config
     await setup_mongo(app, loop)
     app.on_cleanup.append(close_mongo)

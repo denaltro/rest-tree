@@ -10,3 +10,11 @@ async def check_auth(request, handler):
         response = await handler(request)
         return response
     raise web.HTTPUnauthorized()
+
+
+@middleware
+async def set_body(request, handler):
+    if request.can_read_body:
+        request.body = await request.json()
+    response = await handler(request)
+    return response

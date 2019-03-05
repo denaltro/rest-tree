@@ -1,3 +1,4 @@
+import os
 import yaml
 import pathlib
 import base64
@@ -5,6 +6,7 @@ import base64
 
 class Config:
     def __init__(self):
+        self._api_env = os.environ.get('API_ENV') or 'test'
         _config_file = self._read_config()
 
         mongo = _config_file['mongo']
@@ -23,11 +25,10 @@ class Config:
         user_pass = base64.b64encode('{}:{}'.format(
             self.auth_user, self.auth_password).encode('utf-8'))
         self.basic_auth = 'Basic {}'.format(user_pass.decode('utf-8'))
-        print(self.basic_auth)
 
     def _read_config(self):
         file_path = (
-            '{}/../config/config.yml'.format(pathlib.Path(__file__).parent))
+            '{}/../config/config.{}.yml'.format(pathlib.Path(__file__).parent, self._api_env))
         try:
             with open(file_path, 'r', encoding='utf8') as file:
                 return yaml.load(file)
